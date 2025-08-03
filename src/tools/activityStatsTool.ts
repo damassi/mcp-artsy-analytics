@@ -1,4 +1,7 @@
 import * as z from "zod"
+import { gql } from "@urql/core"
+import { executeQuery } from "utils/graphql"
+import { ActivityStatsToolQuery } from "generated/graphql"
 
 export interface ActivityStatsArgs {
   partnerId: string
@@ -23,7 +26,7 @@ export const activityStatsTool = () => {
       period = "FOUR_WEEKS",
     }: ActivityStatsArgs) => {
       try {
-        const query = `
+        const query = gql`
           query activityStatsToolQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -35,7 +38,7 @@ export const activityStatsTool = () => {
                   totalCount
                   percentageChanged
                   artworkViews
-                    galleryViews
+                  galleryViews
                   showViews
                   uniqueVisitors
                   timeSeries {
@@ -49,22 +52,10 @@ export const activityStatsTool = () => {
           }
         `
 
-        const response = await fetch(process.env.METAPHYSICS_ENDPOINT!, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-USER-ID": process.env.USER_ID!,
-            "X-ACCESS-TOKEN": process.env.X_ACCESS_TOKEN!,
-            "X-TIMEZONE": Intl.DateTimeFormat().resolvedOptions().timeZone,
-            "X-CMS-Request": "true",
-          },
-          body: JSON.stringify({
-            query,
-            variables: { partnerId, period },
-          }),
+        const data = await executeQuery<ActivityStatsToolQuery>(query, {
+          partnerId,
+          period,
         })
-
-        const data = await response.json()
 
         return {
           content: [
@@ -72,9 +63,9 @@ export const activityStatsTool = () => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: data.data?.partner?.name,
+                  partner: data.partner?.name,
                   period,
-                  activity: data.data?.partner?.analytics?.pageviews,
+                  activity: data.partner?.analytics?.pageviews,
                 },
                 null,
                 2

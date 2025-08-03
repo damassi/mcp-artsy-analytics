@@ -1,4 +1,4 @@
-import { createClient, fetchExchange } from "@urql/core"
+import { createClient, fetchExchange, TypedDocumentNode } from "@urql/core"
 
 export const urqlClient = createClient({
   url: process.env.METAPHYSICS_ENDPOINT!,
@@ -14,7 +14,7 @@ export const urqlClient = createClient({
 })
 
 export async function executeQuery<T = unknown>(
-  query: string,
+  query: string | TypedDocumentNode<any, any>,
   variables?: Record<string, unknown>
 ): Promise<T> {
   const result = await urqlClient.query(query, variables).toPromise()

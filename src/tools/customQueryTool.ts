@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { executeQuery } from "../utils/graphql"
+import { executeQuery } from "utils/graphql"
 
 export interface CustomQueryArgs {
   query: string
@@ -20,7 +20,7 @@ export const customQueryTool = () => {
     },
     handler: async ({ query, variables = {} }: CustomQueryArgs) => {
       try {
-        const data = await executeQuery(query, variables)
+        const data = await executeQuery<any>(query, variables)
 
         return {
           content: [

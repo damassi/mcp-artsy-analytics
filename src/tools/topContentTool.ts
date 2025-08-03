@@ -1,4 +1,7 @@
 import * as z from "zod"
+import { gql } from "@urql/core"
+import { TopContentQuery } from "generated/graphql"
+import { executeQuery } from "utils/graphql"
 
 export interface TopContentArgs {
   partnerId: string
@@ -37,7 +40,7 @@ export const topContentTool = () => {
       first = 10,
     }: TopContentArgs) => {
       try {
-        const query = `
+        const query = gql`
           query topContentQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -59,8 +62,8 @@ export const topContentTool = () => {
                         __typename
                         ... on Artwork {
                           id
-                          slug
-                          title
+                          artworkSlug: slug
+                          artworkTitle: title
                           artist {
                             name
                           }
@@ -70,24 +73,23 @@ export const topContentTool = () => {
                         }
                         ... on Show {
                           id
-                          slug
-                          name
+                          showSlug: slug
+                          showTitle: name
                           startAt
                           endAt
-                          status
+                          showStatus: status
                         }
                         ... on Artist {
                           id
-                          slug
-                          name
+                          artistSlug: slug
+                          artistName: name
                           nationality
                           birthday
                         }
                         ... on ViewingRoom {
-                          id
-                          slug
-                          title
-                          status
+                          viewingRoomSlug: slug
+                          viewingRoomTitle: title
+                          viewingRoomStatus: status
                           published
                         }
                       }
@@ -99,22 +101,12 @@ export const topContentTool = () => {
           }
         `
 
-        const response = await fetch(process.env.METAPHYSICS_ENDPOINT!, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-USER-ID': process.env.USER_ID!,
-            'X-ACCESS-TOKEN': process.env.X_ACCESS_TOKEN!,
-            'X-TIMEZONE': Intl.DateTimeFormat().resolvedOptions().timeZone,
-            'X-CMS-Request': 'true',
-          },
-          body: JSON.stringify({
-            query,
-            variables: { partnerId, period, objectType, first }
-          })
+        const data = await executeQuery<TopContentQuery>(query, {
+          partnerId,
+          period,
+          objectType,
+          first,
         })
-
-        const data = await response.json()
 
         return {
           content: [
@@ -122,13 +114,16 @@ export const topContentTool = () => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: data.data?.partner?.name,
+                  partner: data.partner?.name,
                   period,
                   objectType,
-                  topContent: data.data?.partner?.analytics?.rankedStats?.edges?.map((edge: any) => ({
-                    views: edge.node.value,
-                    content: edge.node.entity,
-                  })) || [],
+                  topContent:
+                    data.partner?.analytics?.rankedStats?.edges?.map(
+                      (edge) => ({
+                        views: edge?.node?.value,
+                        content: edge?.node?.entity,
+                      })
+                    ) || [],
                 },
                 null,
                 2

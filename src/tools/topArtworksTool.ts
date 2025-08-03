@@ -1,5 +1,7 @@
 import * as z from "zod"
-import { executeQuery } from "../utils/graphql"
+import { gql } from "@urql/core"
+import { TopArtworksToolQuery } from "generated/graphql"
+import { executeQuery } from "utils/graphql"
 
 export interface TopArtworksArgs {
   partnerId: string
@@ -33,7 +35,7 @@ export const topArtworksTool = () => {
       limit = 15,
     }: TopArtworksArgs) => {
       try {
-        const query = `
+        const query = gql`
           query topArtworksToolQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -75,7 +77,7 @@ export const topArtworksTool = () => {
           }
         `
 
-        const data = await executeQuery<any>(query, {
+        const data = await executeQuery<TopArtworksToolQuery>(query, {
           partnerId,
           period,
           limit,

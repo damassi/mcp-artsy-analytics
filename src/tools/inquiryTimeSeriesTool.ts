@@ -1,4 +1,7 @@
 import * as z from "zod"
+import { gql } from "@urql/core"
+import { InquiryTimeSeriesQuery } from "generated/graphql"
+import { executeQuery } from "utils/graphql"
 
 export interface InquiryTimeSeriesArgs {
   partnerId: string
@@ -12,7 +15,9 @@ export const inquiryTimeSeriesTool = () => {
     description:
       "Get detailed inquiry analytics with time series data and response times",
     inputSchema: {
-      partnerId: z.string().describe("Partner ID to get inquiry time series for"),
+      partnerId: z
+        .string()
+        .describe("Partner ID to get inquiry time series for"),
       period: z
         .enum(["FOUR_WEEKS", "SIXTEEN_WEEKS", "ONE_YEAR"])
         .optional()
@@ -30,7 +35,7 @@ export const inquiryTimeSeriesTool = () => {
       cumulative = false,
     }: InquiryTimeSeriesArgs) => {
       try {
-        const query = `
+        const query = gql`
           query inquiryTimeSeriesQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -53,23 +58,12 @@ export const inquiryTimeSeriesTool = () => {
           }
         `
 
-        const response = await fetch(process.env.METAPHYSICS_ENDPOINT!, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-USER-ID': process.env.USER_ID!,
-            'X-ACCESS-TOKEN': process.env.X_ACCESS_TOKEN!,
-            'X-TIMEZONE': Intl.DateTimeFormat().resolvedOptions().timeZone,
-            'X-CMS-Request': 'true',
-          },
-          body: JSON.stringify({
-            query,
-            variables: { partnerId, period, cumulative }
-          })
+        const data = await executeQuery<InquiryTimeSeriesQuery>(query, {
+          partnerId,
+          period,
+          cumulative,
         })
-
-        const data = await response.json()
-        const inquiryData = data.data?.partner?.analytics?.inquiry
+        const inquiryData = data.partner?.analytics?.inquiry
 
         return {
           content: [
@@ -77,14 +71,18 @@ export const inquiryTimeSeriesTool = () => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: data.data?.partner?.name,
+                  partner: data.partner?.name,
                   period,
                   cumulative,
                   inquiries: {
                     summary: {
                       inquiryCount: inquiryData?.inquiryCount,
                       inquiryResponseTime: inquiryData?.inquiryResponseTime,
-                      avgResponseTimeHours: inquiryData?.inquiryResponseTime ? Math.round(inquiryData.inquiryResponseTime / 3600 * 100) / 100 : null,
+                      avgResponseTimeHours: inquiryData?.inquiryResponseTime
+                        ? Math.round(
+                            (inquiryData.inquiryResponseTime / 3600) * 100
+                          ) / 100
+                        : null,
                     },
                     timeSeries: inquiryData?.timeSeries || [],
                   },

@@ -1,5 +1,7 @@
 import * as z from "zod"
-import { executeQuery } from "../utils/graphql"
+import { gql } from "@urql/core"
+import { CompleteAnalyticsToolQuery } from "generated/graphql"
+import { executeQuery } from "utils/graphql"
 
 export interface CompleteAnalyticsArgs {
   partnerId: string
@@ -26,7 +28,7 @@ export const completeAnalyticsTool = () => {
       period = "FOUR_WEEKS",
     }: CompleteAnalyticsArgs) => {
       try {
-        const query = `
+        const query = gql`
           query completeAnalyticsToolQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -83,7 +85,10 @@ export const completeAnalyticsTool = () => {
           }
         `
 
-        const data = await executeQuery<any>(query, { partnerId, period })
+        const data = await executeQuery<CompleteAnalyticsToolQuery>(query, {
+          partnerId,
+          period,
+        })
 
         return {
           content: [

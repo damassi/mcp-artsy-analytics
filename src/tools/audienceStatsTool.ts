@@ -1,5 +1,7 @@
 import * as z from "zod"
 import { executeQuery } from "../utils/graphql"
+import { gql } from "@urql/core"
+import { AudienceStatsToolQuery } from "generated/graphql"
 
 export interface AudienceStatsArgs {
   partnerId: string
@@ -33,7 +35,7 @@ export const audienceStatsTool = () => {
       includeGroupedStats = true,
     }: AudienceStatsArgs) => {
       try {
-        const query = `
+        const query = gql`
           query audienceStatsToolQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -105,12 +107,7 @@ export const audienceStatsTool = () => {
           }
         `
 
-        const data = await executeQuery<{
-          partner?: {
-            name?: string
-            analytics?: unknown
-          }
-        }>(query, {
+        const data = await executeQuery<AudienceStatsToolQuery>(query, {
           partnerId,
           period,
           includeGroupedStats,
