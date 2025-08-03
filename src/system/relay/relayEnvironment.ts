@@ -2,19 +2,18 @@ import { Environment, RecordSource, Store } from "relay-runtime"
 import {
   RelayNetworkLayer,
   urlMiddleware,
-  loggerMiddleware,
   cacheMiddleware,
   errorMiddleware,
 } from "react-relay-network-modern"
 
-export const createRelayEnvironment = (userId: string): Environment => {
-  const url = process.env.METAPHYSICS_URL as string
+export const createRelayEnvironment = (): Environment => {
+  const url = process.env.METAPHYSICS_ENDPOINT as string
 
   const authenticatedHeaders = (() => {
-    if (userId) {
+    if (process.env.USER_ID) {
       return {
-        "X-USER-ID": process.env.USER_ID || userId,
-        "X-ACCESS-TOKEN": process.env.X_ACCESS_TOKEN
+        "X-USER-ID": process.env.USER_ID,
+        "X-ACCESS-TOKEN": process.env.X_ACCESS_TOKEN,
       }
     }
     return {}
@@ -27,7 +26,7 @@ export const createRelayEnvironment = (userId: string): Environment => {
         headers: {
           "X-TIMEZONE": Intl.DateTimeFormat().resolvedOptions().timeZone,
           "X-CMS-Request": "true",
-          ...authenticatedHeaders as Record<string, string>,
+          ...(authenticatedHeaders as Record<string, string>),
         },
       }),
       cacheMiddleware({
@@ -35,13 +34,12 @@ export const createRelayEnvironment = (userId: string): Environment => {
         ttl: 20 * 60 * 1000, // 20 minutes
         clearOnMutation: true,
       }),
-      loggerMiddleware(),
       errorMiddleware({
         disableServerMiddlewareTip: true,
       }),
     ],
     // TODO: Look closer at forces config for more advanced error handling.
-    { noThrow: true },
+    { noThrow: true }
   )
   const source = new RecordSource()
   const store = new Store(source)
