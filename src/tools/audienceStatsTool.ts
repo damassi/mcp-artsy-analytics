@@ -1,5 +1,5 @@
 import * as z from "zod"
-import { executeQuery } from "../utils/graphql"
+import { executeQuery } from "utils/graphql"
 import { gql } from "@urql/core"
 import { AudienceStatsToolQuery } from "generated/graphql"
 
