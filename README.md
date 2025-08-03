@@ -52,7 +52,7 @@ bun sync-schema
 - Configure Claude Desktop MCP settings:
 
 ```bash
-code /Users/<your-user-name>/Library/Application Support/Claude/claude_desktop_config.json
+code ~/Library/Application Support/Claude/claude_desktop_config.json
 ```
 
 ```json
@@ -92,9 +92,9 @@ bun dev
 Then launch the `modelcontextprotocol` [inspector](https://modelcontextprotocol.io/legacy/tools/inspector):
 
 ```
-npx @modelcontextprotocol/inspector
+bunx @modelcontextprotocol/inspector
 ```
 
-Make sure the setup looks like the below:
+Make sure the setup looks like the below, and (critical!) be sure to add correct `Environment Variables` as seen in `.env.example`:
 
 <img width="1512" height="828" alt="Image" src="https://github.com/user-attachments/assets/f33ce877-eedc-473c-a5a4-cf05637d619b" />
