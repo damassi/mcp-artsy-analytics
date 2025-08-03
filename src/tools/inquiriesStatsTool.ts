@@ -1,14 +1,12 @@
 import * as z from "zod"
-import { graphql, fetchQuery } from "relay-runtime"
-import type { Environment } from "relay-runtime"
-import type { inquiriesStatsToolQuery } from "z__generated__/inquiriesStatsToolQuery.graphql.js"
+import { executeQuery } from "../utils/graphql"
 
 export interface InquiriesStatsArgs {
   partnerId: string
   period?: "FOUR_WEEKS" | "SIXTEEN_WEEKS" | "ONE_YEAR"
 }
 
-export const inquiriesStatsTool = (relayEnvironment: Environment) => {
+export const inquiriesStatsTool = () => {
   return {
     name: "get_partner_inquiries_stats",
     description:
@@ -26,31 +24,29 @@ export const inquiriesStatsTool = (relayEnvironment: Environment) => {
       period = "FOUR_WEEKS",
     }: InquiriesStatsArgs) => {
       try {
-        const data = await fetchQuery<inquiriesStatsToolQuery>(
-          relayEnvironment,
-          graphql`
-            query inquiriesStatsToolQuery(
-              $partnerId: String!
-              $period: AnalyticsQueryPeriodEnum!
-            ) {
-              partner(id: $partnerId) {
-                name
-                analytics {
-                  inquiry(period: $period) {
-                    inquiryCount
-                    inquiryResponseTime
-                    timeSeries(cumulative: false) {
-                      count
-                      startTime
-                      endTime
-                    }
+        const query = `
+          query inquiriesStatsToolQuery(
+            $partnerId: String!
+            $period: AnalyticsQueryPeriodEnum!
+          ) {
+            partner(id: $partnerId) {
+              name
+              analytics {
+                inquiry(period: $period) {
+                  inquiryCount
+                  inquiryResponseTime
+                  timeSeries(cumulative: false) {
+                    count
+                    startTime
+                    endTime
                   }
                 }
               }
             }
-          `,
-          { partnerId, period }
-        ).toPromise()
+          }
+        `
+
+        const data = await executeQuery<any>(query, { partnerId, period })
 
         return {
           content: [

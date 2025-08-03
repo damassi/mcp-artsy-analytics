@@ -1,13 +1,11 @@
-import { graphql, fetchQuery } from "relay-runtime"
-import type { Environment } from "relay-runtime"
 import * as z from "zod"
-import { activityStatsToolQuery } from "z__generated__/activityStatsToolQuery.graphql"
+
 export interface ActivityStatsArgs {
   partnerId: string
   period?: "FOUR_WEEKS" | "SIXTEEN_WEEKS" | "ONE_YEAR"
 }
 
-export const activityStatsTool = (relayEnvironment: Environment) => {
+export const activityStatsTool = () => {
   return {
     name: "get_partner_activity_stats",
     description:
@@ -25,35 +23,48 @@ export const activityStatsTool = (relayEnvironment: Environment) => {
       period = "FOUR_WEEKS",
     }: ActivityStatsArgs) => {
       try {
-        const data = await fetchQuery<activityStatsToolQuery>(
-          relayEnvironment,
-          graphql`
-            query activityStatsToolQuery(
-              $partnerId: String!
-              $period: AnalyticsQueryPeriodEnum!
-            ) {
-              partner(id: $partnerId) {
-                name
-                analytics {
-                  pageviews(period: $period) {
-                    totalCount
-                    percentageChanged
-                    artworkViews
+        const query = `
+          query activityStatsToolQuery(
+            $partnerId: String!
+            $period: AnalyticsQueryPeriodEnum!
+          ) {
+            partner(id: $partnerId) {
+              name
+              analytics {
+                pageviews(period: $period) {
+                  totalCount
+                  percentageChanged
+                  artworkViews
                     galleryViews
-                    showViews
-                    uniqueVisitors
-                    timeSeries {
-                      count
-                      startTime
-                      endTime
-                    }
+                  showViews
+                  uniqueVisitors
+                  timeSeries {
+                    count
+                    startTime
+                    endTime
                   }
                 }
               }
             }
-          `,
-          { partnerId, period }
-        ).toPromise()
+          }
+        `
+
+        const response = await fetch(process.env.METAPHYSICS_ENDPOINT!, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-USER-ID": process.env.USER_ID!,
+            "X-ACCESS-TOKEN": process.env.X_ACCESS_TOKEN!,
+            "X-TIMEZONE": Intl.DateTimeFormat().resolvedOptions().timeZone,
+            "X-CMS-Request": "true",
+          },
+          body: JSON.stringify({
+            query,
+            variables: { partnerId, period },
+          }),
+        })
+
+        const data = await response.json()
 
         return {
           content: [
@@ -61,9 +72,9 @@ export const activityStatsTool = (relayEnvironment: Environment) => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: data.partner?.name,
+                  partner: data.data?.partner?.name,
                   period,
-                  activity: data.partner?.analytics?.pageviews,
+                  activity: data.data?.partner?.analytics?.pageviews,
                 },
                 null,
                 2

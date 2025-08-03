@@ -1,24 +1,20 @@
-import "dotenv/config"
-import { createRelayEnvironment } from "./system/relay/relayEnvironment.js"
-
-import { activityStatsTool } from "./tools/activityStatsTool.js"
-import { salesStatsTool } from "./tools/salesStatsTool.js"
-import { customQueryTool } from "./tools/customQueryTool.js"
-import { artworksPublishedStatsTool } from "./tools/artworksPublishedStatsTool.js"
-import { audienceStatsTool } from "./tools/audienceStatsTool.js"
-import { completeAnalyticsTool } from "./tools/completeAnalyticsTool.js"
-import { inquiriesStatsTool } from "./tools/inquiriesStatsTool.js"
-import { topArtworksTool } from "./tools/topArtworksTool.js"
-import { visitorDemographicsTool } from "./tools/visitorDemographicsTool.js"
-import { timeSeriesAnalyticsTool } from "./tools/timeSeriesAnalyticsTool.js"
-import { modernPageviewsTool } from "./tools/modernPageviewsTool.js"
-import { topContentTool } from "./tools/topContentTool.js"
-import { salesTimeSeriesTool } from "./tools/salesTimeSeriesTool.js"
-import { inquiryTimeSeriesTool } from "./tools/inquiryTimeSeriesTool.js"
-import { McpServer } from "../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/mcp.js"
-import { StdioServerTransport } from "../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/stdio.js"
-
-const relayEnvironment = createRelayEnvironment()
+import { activityStatsTool } from "./tools/activityStatsTool"
+import { salesStatsTool } from "./tools/salesStatsTool"
+import { customQueryTool } from "./tools/customQueryTool"
+import { artworksPublishedStatsTool } from "./tools/artworksPublishedStatsTool"
+import { audienceStatsTool } from "./tools/audienceStatsTool"
+import { completeAnalyticsTool } from "./tools/completeAnalyticsTool"
+import { inquiriesStatsTool } from "./tools/inquiriesStatsTool"
+import { topArtworksTool } from "./tools/topArtworksTool"
+import { visitorDemographicsTool } from "./tools/visitorDemographicsTool"
+import { timeSeriesAnalyticsTool } from "./tools/timeSeriesAnalyticsTool"
+import { modernPageviewsTool } from "./tools/modernPageviewsTool"
+import { topContentTool } from "./tools/topContentTool"
+import { salesTimeSeriesTool } from "./tools/salesTimeSeriesTool"
+import { inquiryTimeSeriesTool } from "./tools/inquiryTimeSeriesTool"
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
+import chalk from "chalk"
 
 const server = new McpServer({
   name: "artsy-analytics-server",
@@ -26,14 +22,14 @@ const server = new McpServer({
 })
 
 const tools = [
-  activityStatsTool(relayEnvironment),
-  salesStatsTool(relayEnvironment),
-  customQueryTool(relayEnvironment),
-  artworksPublishedStatsTool(relayEnvironment),
-  audienceStatsTool(relayEnvironment),
-  completeAnalyticsTool(relayEnvironment),
-  inquiriesStatsTool(relayEnvironment),
-  topArtworksTool(relayEnvironment),
+  activityStatsTool(),
+  salesStatsTool(),
+  customQueryTool(),
+  artworksPublishedStatsTool(),
+  audienceStatsTool(),
+  completeAnalyticsTool(),
+  inquiriesStatsTool(),
+  topArtworksTool(),
   visitorDemographicsTool(),
   timeSeriesAnalyticsTool(),
   modernPageviewsTool(),
@@ -50,10 +46,10 @@ tools.forEach((tool) => {
       description: tool.description,
       inputSchema: tool.inputSchema,
     },
-    async (args) => {
+    async (args: any) => {
       try {
         const result = await tool.handler(args)
-        return result
+        return result as any
       } catch (error) {
         console.log(`Tool error: ${tool.name}`, {
           error: error instanceof Error ? error.message : error,
@@ -67,7 +63,44 @@ tools.forEach((tool) => {
 // Start receiving messages on stdin and sending messages on stdout
 async function startServer() {
   const transport = new StdioServerTransport()
-  await server.connect(transport)
+
+  try {
+    await server.connect(transport)
+
+    console.log(`
+${chalk.magenta("[artsy-analytics-mcp]")} ${chalk.bold("MCP server running.")}
+
+${chalk.cyan("Available Tools:")} ${chalk.yellow(tools.length)} analytics tools loaded
+
+${chalk.bold("Claude Desktop Configuration:")}
+Add this to your claude_desktop_config.json:
+
+${chalk.gray(`{
+  "mcpServers": {
+    "artsy-analytics": {
+      "command": "bun",
+      "args": ["${process.cwd()}/src/mcp-server.ts"],
+      "env": {
+        "METAPHYSICS_ENDPOINT": "your_endpoint",
+        "USER_ID": "your_user_id",
+        "X_ACCESS_TOKEN": "your_token"
+      }
+    }
+  }
+}`)}
+
+${chalk.bold("Config file location:")}
+  ${chalk.dim("~/Library/Application Support/Claude/claude_desktop_config.json")}
+
+${chalk.bold("Try asking Claude:")} ${chalk.italic('"Show visitor demographics for gagosian"')}
+`)
+  } catch (error) {
+    console.error(
+      "[analytics-mcp: ERROR] Error starting Artsy Analytics MCP Server:",
+      error
+    )
+    process.exit(1)
+  }
 }
 
-startServer().catch(console.error)
+startServer()

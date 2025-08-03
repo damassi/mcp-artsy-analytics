@@ -1,14 +1,12 @@
-import { fetchQuery } from "relay-runtime"
-import { getRequest } from "relay-runtime"
-import type { Environment } from "relay-runtime"
 import { z } from "zod"
+import { executeQuery } from "../utils/graphql"
 
 export interface CustomQueryArgs {
   query: string
   variables?: Record<string, unknown>
 }
 
-export const customQueryTool = (relayEnvironment: Environment) => {
+export const customQueryTool = () => {
   return {
     name: "query_analytics_custom",
     description: "Execute a custom GraphQL query against the analytics schema",
@@ -22,36 +20,7 @@ export const customQueryTool = (relayEnvironment: Environment) => {
     },
     handler: async ({ query, variables = {} }: CustomQueryArgs) => {
       try {
-        // Create a request object from the query string
-        const request = getRequest({
-          kind: "Request",
-          fragment: {
-            kind: "Fragment",
-            name: "CustomQuery",
-            type: "Query",
-            metadata: null,
-            argumentDefinitions: [],
-            selections: [],
-          },
-          operation: {
-            id: "CustomQuery",
-            kind: "Operation",
-            name: "CustomQuery",
-            argumentDefinitions: [],
-            selections: [],
-          },
-          params: {
-            name: "CustomQuery",
-            operationKind: "query",
-            text: query,
-          },
-        })
-
-        const data = await fetchQuery(
-          relayEnvironment,
-          request,
-          variables
-        ).toPromise()
+        const data = await executeQuery(query, variables)
 
         return {
           content: [

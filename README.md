@@ -29,22 +29,26 @@ Model Context Protocol server providing Artsy partner analytics tools for Claude
 
 ## Setup
 
+- Install Bun
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
 - Install deps
 
 ```bash
 git clone https://github.com/damassi/mcp-tests.git
 cd mcp-tests
-yarn install
+bun install
 ```
 
 - Sync GraphQL schema:
 
 ```bash
-yarn sync-schema
-yarn relay
+bun sync-schema
 ```
 
-- Build: `yarn build`
 - Configure Claude Desktop MCP settings:
 
 ```bash
@@ -55,8 +59,8 @@ code /Users/<your-user-name>/Library/Application Support/Claude/claude_desktop_c
 {
   "mcpServers": {
     "artsy-analytics": {
-      "command": "node",
-      "args": ["/path/to/mcp/dist/mcp-server.js"],
+      "command": "bun",
+      "args": ["/path/to/mcp/mcp-server.ts"],
       "env": {
         "METAPHYSICS_ENDPOINT": "your_endpoint",
         "USER_ID": "your_user_id",
@@ -82,7 +86,7 @@ Ask Claude questions like:
 When developing, can run
 
 ```bash
-yarn build --watch
+bun dev
 ```
 
 Then launch the `modelcontextprotocol` [inspector](https://modelcontextprotocol.io/legacy/tools/inspector):
@@ -93,4 +97,4 @@ npx @modelcontextprotocol/inspector
 
 Make sure the setup looks like the below:
 
-<img width="1051" height="428" alt="Image" src="https://github.com/user-attachments/assets/50c6d0d4-205f-44a6-87de-f52a61bb98a9" />
+<img width="1512" height="828" alt="Image" src="https://github.com/user-attachments/assets/f33ce877-eedc-473c-a5a4-cf05637d619b" />

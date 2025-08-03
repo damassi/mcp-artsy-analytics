@@ -1,7 +1,5 @@
 import * as z from "zod"
-import { graphql, fetchQuery } from "relay-runtime"
-import type { Environment } from "relay-runtime"
-import type { topArtworksToolQuery } from "z__generated__/topArtworksToolQuery.graphql.js"
+import { executeQuery } from "../utils/graphql"
 
 export interface TopArtworksArgs {
   partnerId: string
@@ -9,7 +7,7 @@ export interface TopArtworksArgs {
   limit?: number
 }
 
-export const topArtworksTool = (relayEnvironment: Environment) => {
+export const topArtworksTool = () => {
   return {
     name: "get_partner_top_artworks",
     description: "Get partner's most viewed artworks with ranking data",
@@ -35,41 +33,38 @@ export const topArtworksTool = (relayEnvironment: Environment) => {
       limit = 15,
     }: TopArtworksArgs) => {
       try {
-        const data = await fetchQuery<topArtworksToolQuery>(
-          relayEnvironment,
-          graphql`
-            query topArtworksToolQuery(
-              $partnerId: String!
-              $period: AnalyticsQueryPeriodEnum!
-              $limit: Int!
-            ) {
-              partner(id: $partnerId) {
-                name
-                analytics {
-                  rankedStats(
-                    objectType: ARTWORK
-                    period: $period
-                    first: $limit
-                  ) {
-                    edges {
-                      node {
-                        value
-                        entity {
-                          __typename
-                          ... on Artwork {
-                            id
-                            slug
-                            title
-                            artist {
-                              name
-                            }
-                            image {
-                              cropped(width: 300, height: 300) {
-                                url
-                              }
-                            }
-                            isUnlisted
+        const query = `
+          query topArtworksToolQuery(
+            $partnerId: String!
+            $period: AnalyticsQueryPeriodEnum!
+            $limit: Int!
+          ) {
+            partner(id: $partnerId) {
+              name
+              analytics {
+                rankedStats(
+                  objectType: ARTWORK
+                  period: $period
+                  first: $limit
+                ) {
+                  edges {
+                    node {
+                      value
+                      entity {
+                        __typename
+                        ... on Artwork {
+                          id
+                          slug
+                          title
+                          artist {
+                            name
                           }
+                          image {
+                            cropped(width: 300, height: 300) {
+                              url
+                            }
+                          }
+                          isUnlisted
                         }
                       }
                     }
@@ -77,9 +72,14 @@ export const topArtworksTool = (relayEnvironment: Environment) => {
                 }
               }
             }
-          `,
-          { partnerId, period, limit }
-        ).toPromise()
+          }
+        `
+
+        const data = await executeQuery<any>(query, {
+          partnerId,
+          period,
+          limit,
+        })
 
         return {
           content: [
