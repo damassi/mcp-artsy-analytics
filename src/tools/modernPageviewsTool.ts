@@ -1,4 +1,6 @@
 import * as z from "zod"
+import { gql } from "@urql/core"
+import { executeQuery } from "utils/graphql"
 
 export interface ModernPageviewsArgs {
   partnerId: string
@@ -13,7 +15,9 @@ export const modernPageviewsTool = () => {
     description:
       "Get detailed pageview analytics using the modern pageview schema with time series support",
     inputSchema: {
-      partnerId: z.string().describe("Partner ID to get modern pageview analytics for"),
+      partnerId: z
+        .string()
+        .describe("Partner ID to get modern pageview analytics for"),
       period: z
         .enum(["FOUR_WEEKS", "SIXTEEN_WEEKS", "ONE_YEAR"])
         .optional()
@@ -37,7 +41,7 @@ export const modernPageviewsTool = () => {
       cumulative = false,
     }: ModernPageviewsArgs) => {
       try {
-        const query = `
+        const query = gql`
           query modernPageviewsQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -53,36 +57,27 @@ export const modernPageviewsTool = () => {
                   galleryViews
                   showViews
                   uniqueVisitors
-                  ${includeTimeSeries ? `
+                  ${
+                    includeTimeSeries
+                      ? `
                   timeSeries(cumulative: $cumulative) {
                     count
                     startTime
                     endTime
                   }
-                  ` : ''}
+                  `
+                      : ""
+                  }
                 }
               }
             }
           }
         `
 
-        const response = await fetch(process.env.METAPHYSICS_ENDPOINT!, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-USER-ID': process.env.USER_ID!,
-            'X-ACCESS-TOKEN': process.env.X_ACCESS_TOKEN!,
-            'X-TIMEZONE': Intl.DateTimeFormat().resolvedOptions().timeZone,
-            'X-CMS-Request': 'true',
-          },
-          body: JSON.stringify({
-            query,
-            variables: { partnerId, period, cumulative }
-          })
-        })
-
-        const data = await response.json()
-        const pageviewData = data.data?.partner?.analytics?.pageview
+        const data = await executeQuery<{
+          partner?: { name?: string | null; analytics?: { pageview?: any } }
+        }>(query, { partnerId, period, cumulative })
+        const pageviewData = data.partner?.analytics?.pageview
 
         return {
           content: [
@@ -90,7 +85,7 @@ export const modernPageviewsTool = () => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: data.data?.partner?.name,
+                  partner: data.partner?.name,
                   period,
                   cumulative,
                   pageviews: {
@@ -104,7 +99,7 @@ export const modernPageviewsTool = () => {
                     },
                     ...(includeTimeSeries && {
                       timeSeries: pageviewData?.timeSeries || [],
-                    })
+                    }),
                   },
                 },
                 null,

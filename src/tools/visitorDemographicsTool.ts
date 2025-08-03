@@ -1,9 +1,16 @@
 import * as z from "zod"
+import { gql } from "@urql/core"
+import { VisitorDemographicsQuery } from "generated/graphql"
+import { executeQuery } from "utils/graphql"
 
 export interface VisitorDemographicsArgs {
   partnerId: string
   period?: "FOUR_WEEKS" | "SIXTEEN_WEEKS" | "ONE_YEAR"
-  metric?: "VISITOR_BY_DEVICE" | "VISITOR_BY_LOCATION" | "VISITOR_BY_REFERRAL" | "VISITOR_BY_LANDING_PAGE"
+  metric?:
+    | "VISITOR_BY_DEVICE"
+    | "VISITOR_BY_LOCATION"
+    | "VISITOR_BY_REFERRAL"
+    | "VISITOR_BY_LANDING_PAGE"
   objectType?: "DEVICE" | "COUNTRY" | "REFERRAL" | "LANDING_PAGE"
   first?: number
 }
@@ -14,14 +21,21 @@ export const visitorDemographicsTool = () => {
     description:
       "Get visitor demographic breakdowns by device, country, referral source, or landing page",
     inputSchema: {
-      partnerId: z.string().describe("Partner ID to get visitor demographics for"),
+      partnerId: z
+        .string()
+        .describe("Partner ID to get visitor demographics for"),
       period: z
         .enum(["FOUR_WEEKS", "SIXTEEN_WEEKS", "ONE_YEAR"])
         .optional()
         .default("FOUR_WEEKS")
         .describe("Time period for demographic data"),
       metric: z
-        .enum(["VISITOR_BY_DEVICE", "VISITOR_BY_LOCATION", "VISITOR_BY_REFERRAL", "VISITOR_BY_LANDING_PAGE"])
+        .enum([
+          "VISITOR_BY_DEVICE",
+          "VISITOR_BY_LOCATION",
+          "VISITOR_BY_REFERRAL",
+          "VISITOR_BY_LANDING_PAGE",
+        ])
         .optional()
         .default("VISITOR_BY_LOCATION")
         .describe("Type of demographic breakdown to retrieve"),
@@ -44,7 +58,7 @@ export const visitorDemographicsTool = () => {
       first = 10,
     }: VisitorDemographicsArgs) => {
       try {
-        const query = `
+        const query = gql`
           query visitorDemographicsQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -63,33 +77,35 @@ export const visitorDemographicsTool = () => {
                 ) {
                   edges {
                     node {
-                      ... on AnalyticsVisitorsByCountry {
-                        metric
-                        name
-                        percent
-                        type
-                        value
-                      }
-                      ... on AnalyticsVisitorsByDevice {
-                        metric
-                        name
-                        percent
-                        type
-                        value
-                      }
-                      ... on AnalyticsVisitorsByReferral {
-                        metric
-                        name
-                        percent
-                        type
-                        value
-                      }
-                      ... on AnalyticsVisitorsByLandingPage {
-                        metric
-                        name
-                        percent
-                        type
-                        value
+                      groupedEntity {
+                        ... on AnalyticsVisitorsByCountry {
+                          metric
+                          name
+                          percent
+                          type
+                          value
+                        }
+                        ... on AnalyticsVisitorsByDevice {
+                          metric
+                          name
+                          percent
+                          type
+                          value
+                        }
+                        ... on AnalyticsVisitorsByReferral {
+                          metric
+                          name
+                          percent
+                          type
+                          value
+                        }
+                        ... on AnalyticsVisitorsByLandingPage {
+                          metric
+                          name
+                          percent
+                          type
+                          value
+                        }
                       }
                     }
                   }
@@ -99,22 +115,13 @@ export const visitorDemographicsTool = () => {
           }
         `
 
-        const response = await fetch(process.env.METAPHYSICS_ENDPOINT!, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-USER-ID': process.env.USER_ID!,
-            'X-ACCESS-TOKEN': process.env.X_ACCESS_TOKEN!,
-            'X-TIMEZONE': Intl.DateTimeFormat().resolvedOptions().timeZone,
-            'X-CMS-Request': 'true',
-          },
-          body: JSON.stringify({
-            query,
-            variables: { partnerId, period, metric, objectType, first }
-          })
+        const data = await executeQuery<VisitorDemographicsQuery>(query, {
+          partnerId,
+          period,
+          metric,
+          objectType,
+          first,
         })
-
-        const data = await response.json()
 
         return {
           content: [
@@ -122,11 +129,14 @@ export const visitorDemographicsTool = () => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: data.data?.partner?.name,
+                  partner: data.partner?.name,
                   period,
                   metric,
                   objectType,
-                  demographics: data.data?.partner?.analytics?.groupedStats?.edges?.map((edge: any) => edge.node) || [],
+                  demographics:
+                    data.partner?.analytics?.groupedStats?.edges?.map(
+                      (edge) => edge?.node?.groupedEntity
+                    ) || [],
                 },
                 null,
                 2

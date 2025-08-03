@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "bun --watch src/mcp-server.ts",
     "format": "prettier --write src/**/*.{ts,js}",
+    "gql": "graphql-codegen --config codegen-graphql.ts",
     "lint:fix": "eslint src --ext .ts,.js --fix",
     "lint": "eslint src --ext .ts,.js",
     "mcp-server": "bun src/mcp-server.ts",
@@ -28,6 +29,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/schema-ast": "^4.1.0",
+    "@graphql-codegen/typescript-operations": "^4.6.1",
+    "@graphql-codegen/typescript-urql": "^4.0.1",
+    "@graphql-codegen/urql-introspection": "^3.0.1",
+    "@graphql-eslint/eslint-plugin": "^4.4.0",
     "@types/bun": "latest",
     "@types/node": "^24.1.0",
     "eslint": "^8.57.1",

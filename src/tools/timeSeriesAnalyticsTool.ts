@@ -1,4 +1,6 @@
 import * as z from "zod"
+import { gql } from "@urql/core"
+import { executeQuery } from "utils/graphql"
 
 export interface TimeSeriesAnalyticsArgs {
   partnerId: string
@@ -13,7 +15,9 @@ export const timeSeriesAnalyticsTool = () => {
     description:
       "Get time series data for partner analytics with optional cumulative view",
     inputSchema: {
-      partnerId: z.string().describe("Partner ID to get time series analytics for"),
+      partnerId: z
+        .string()
+        .describe("Partner ID to get time series analytics for"),
       period: z
         .enum(["FOUR_WEEKS", "SIXTEEN_WEEKS", "ONE_YEAR"])
         .optional()
@@ -37,7 +41,7 @@ export const timeSeriesAnalyticsTool = () => {
       cumulative = false,
     }: TimeSeriesAnalyticsArgs) => {
       try {
-        const query = `
+        const query = gql`
           query timeSeriesAnalyticsQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -46,7 +50,9 @@ export const timeSeriesAnalyticsTool = () => {
             partner(id: $partnerId) {
               name
               analytics {
-                ${metric === "pageviews" ? `
+                ${
+                  metric === "pageviews"
+                    ? `
                 pageview(period: $period) {
                   totalCount
                   percentageChanged
@@ -60,7 +66,8 @@ export const timeSeriesAnalyticsTool = () => {
                     endTime
                   }
                 }
-                ` : `
+                `
+                    : `
                 artworkPublished(period: $period) {
                   totalCount
                   percentageChanged
@@ -70,29 +77,20 @@ export const timeSeriesAnalyticsTool = () => {
                     endTime
                   }
                 }
-                `}
+                `
+                }
               }
             }
           }
         `
 
-        const response = await fetch(process.env.METAPHYSICS_ENDPOINT!, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-USER-ID': process.env.USER_ID!,
-            'X-ACCESS-TOKEN': process.env.X_ACCESS_TOKEN!,
-            'X-TIMEZONE': Intl.DateTimeFormat().resolvedOptions().timeZone,
-            'X-CMS-Request': 'true',
-          },
-          body: JSON.stringify({
-            query,
-            variables: { partnerId, period, cumulative }
-          })
-        })
-
-        const data = await response.json()
-        const analyticsData = data.data?.partner?.analytics?.[metric === "pageviews" ? "pageview" : "artworkPublished"]
+        const data = await executeQuery<{
+          partner?: { name?: string | null; analytics?: any }
+        }>(query, { partnerId, period, cumulative })
+        const analyticsData =
+          data.partner?.analytics?.[
+            metric === "pageviews" ? "pageview" : "artworkPublished"
+          ]
 
         return {
           content: [
@@ -100,7 +98,7 @@ export const timeSeriesAnalyticsTool = () => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: data.data?.partner?.name,
+                  partner: data.partner?.name,
                   period,
                   metric,
                   cumulative,
@@ -112,7 +110,7 @@ export const timeSeriesAnalyticsTool = () => {
                       galleryViews: analyticsData?.galleryViews,
                       showViews: analyticsData?.showViews,
                       uniqueVisitors: analyticsData?.uniqueVisitors,
-                    })
+                    }),
                   },
                   timeSeries: analyticsData?.timeSeries || [],
                 },

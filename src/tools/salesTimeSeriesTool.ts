@@ -1,4 +1,7 @@
 import * as z from "zod"
+import { gql } from "@urql/core"
+import { SalesTimeSeriesQuery } from "generated/graphql"
+import { executeQuery } from "utils/graphql"
 
 export interface SalesTimeSeriesArgs {
   partnerId: string
@@ -30,7 +33,7 @@ export const salesTimeSeriesTool = () => {
       cumulative = false,
     }: SalesTimeSeriesArgs) => {
       try {
-        const query = `
+        const query = gql`
           query salesTimeSeriesQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -57,23 +60,12 @@ export const salesTimeSeriesTool = () => {
           }
         `
 
-        const response = await fetch(process.env.METAPHYSICS_ENDPOINT!, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-USER-ID': process.env.USER_ID!,
-            'X-ACCESS-TOKEN': process.env.X_ACCESS_TOKEN!,
-            'X-TIMEZONE': Intl.DateTimeFormat().resolvedOptions().timeZone,
-            'X-CMS-Request': 'true',
-          },
-          body: JSON.stringify({
-            query,
-            variables: { partnerId, period, cumulative }
-          })
+        const data = await executeQuery<SalesTimeSeriesQuery>(query, {
+          partnerId,
+          period,
+          cumulative,
         })
-
-        const data = await response.json()
-        const salesData = data.data?.partner?.analytics?.sales
+        const salesData = data.partner?.analytics?.sales
 
         return {
           content: [
@@ -81,7 +73,7 @@ export const salesTimeSeriesTool = () => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: data.data?.partner?.name,
+                  partner: data.partner?.name,
                   period,
                   cumulative,
                   sales: {

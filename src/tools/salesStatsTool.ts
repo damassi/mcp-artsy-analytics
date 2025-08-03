@@ -1,5 +1,7 @@
 import * as z from "zod"
 import { executeQuery } from "../utils/graphql"
+import { gql } from "@urql/core"
+import { SalesStatsToolQuery } from "generated/graphql"
 
 export interface SalesStatsArgs {
   partnerId: string
@@ -21,7 +23,7 @@ export const salesStatsTool = () => {
     },
     handler: async ({ partnerId, period = "FOUR_WEEKS" }: SalesStatsArgs) => {
       try {
-        const query = `
+        const query = gql`
           query salesStatsToolQuery(
             $partnerId: String!
             $period: AnalyticsQueryPeriodEnum!
@@ -46,7 +48,10 @@ export const salesStatsTool = () => {
           }
         `
 
-        const data = await executeQuery<unknown>(query, { partnerId, period })
+        const data = await executeQuery<SalesStatsToolQuery>(query, {
+          partnerId,
+          period,
+        })
 
         return {
           content: [
@@ -54,9 +59,9 @@ export const salesStatsTool = () => {
               type: "text",
               text: JSON.stringify(
                 {
-                  partner: (data as any).partner?.name,
+                  partner: data.partner?.name,
                   period,
-                  sales: (data as any).partner?.analytics?.sales,
+                  sales: data.partner?.analytics?.sales,
                 },
                 null,
                 2
