@@ -1,14 +1,12 @@
 import * as z from "zod"
-import { graphql, fetchQuery } from "relay-runtime"
-import type { Environment } from "relay-runtime"
-import type { artworksPublishedStatsToolQuery } from "z__generated__/artworksPublishedStatsToolQuery.graphql.js"
+import { executeQuery } from "../utils/graphql"
 
 export interface ArtworksPublishedStatsArgs {
   partnerId: string
   period?: "FOUR_WEEKS" | "SIXTEEN_WEEKS" | "ONE_YEAR"
 }
 
-export const artworksPublishedStatsTool = (relayEnvironment: Environment) => {
+export const artworksPublishedStatsTool = () => {
   return {
     name: "get_partner_artworks_published_stats",
     description: "Get partner artwork publishing statistics and trends",
@@ -25,31 +23,29 @@ export const artworksPublishedStatsTool = (relayEnvironment: Environment) => {
       period = "FOUR_WEEKS",
     }: ArtworksPublishedStatsArgs) => {
       try {
-        const data = await fetchQuery<artworksPublishedStatsToolQuery>(
-          relayEnvironment,
-          graphql`
-            query artworksPublishedStatsToolQuery(
-              $partnerId: String!
-              $period: AnalyticsQueryPeriodEnum!
-            ) {
-              partner(id: $partnerId) {
-                name
-                analytics {
-                  artworkPublished(period: $period) {
-                    totalCount
-                    percentageChanged
-                    timeSeries(cumulative: false) {
-                      count
-                      startTime
-                      endTime
-                    }
+        const query = `
+          query artworksPublishedStatsToolQuery(
+            $partnerId: String!
+            $period: AnalyticsQueryPeriodEnum!
+          ) {
+            partner(id: $partnerId) {
+              name
+              analytics {
+                artworkPublished(period: $period) {
+                  totalCount
+                  percentageChanged
+                  timeSeries(cumulative: false) {
+                    count
+                    startTime
+                    endTime
                   }
                 }
               }
             }
-          `,
-          { partnerId, period }
-        ).toPromise()
+          }
+        `
+
+        const data = await executeQuery<any>(query, { partnerId, period })
 
         return {
           content: [

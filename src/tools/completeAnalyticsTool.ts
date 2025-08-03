@@ -1,14 +1,12 @@
 import * as z from "zod"
-import { graphql, fetchQuery } from "relay-runtime"
-import type { Environment } from "relay-runtime"
-import type { completeAnalyticsToolQuery } from "z__generated__/completeAnalyticsToolQuery.graphql.js"
+import { executeQuery } from "../utils/graphql"
 
 export interface CompleteAnalyticsArgs {
   partnerId: string
   period?: "FOUR_WEEKS" | "SIXTEEN_WEEKS" | "ONE_YEAR"
 }
 
-export const completeAnalyticsTool = (relayEnvironment: Environment) => {
+export const completeAnalyticsTool = () => {
   return {
     name: "get_partner_complete_analytics",
     description:
@@ -28,55 +26,52 @@ export const completeAnalyticsTool = (relayEnvironment: Environment) => {
       period = "FOUR_WEEKS",
     }: CompleteAnalyticsArgs) => {
       try {
-        const data = await fetchQuery<completeAnalyticsToolQuery>(
-          relayEnvironment,
-          graphql`
-            query completeAnalyticsToolQuery(
-              $partnerId: String!
-              $period: AnalyticsQueryPeriodEnum!
-            ) {
-              partner(id: $partnerId) {
-                name
-                analytics {
-                  pageviews(period: $period) {
-                    totalCount
-                    percentageChanged
-                    artworkViews
-                    galleryViews
-                    showViews
-                    uniqueVisitors
-                  }
-                  sales(period: $period) {
-                    orderCount
-                    orderResponseTime
-                    totalCents
-                    total
-                  }
-                  inquiry(period: $period) {
-                    inquiryCount
-                    inquiryResponseTime
-                  }
-                  audience(period: $period) {
-                    uniqueVisitors
-                    commercialVisitors
-                  }
-                  artworkPublished(period: $period) {
-                    totalCount
-                    percentageChanged
-                  }
-                  rankedStats(objectType: ARTWORK, period: $period, first: 10) {
-                    edges {
-                      node {
-                        value
-                        entity {
-                          __typename
-                          ... on Artwork {
-                            id
-                            slug
-                            title
-                            artist {
-                              name
-                            }
+        const query = `
+          query completeAnalyticsToolQuery(
+            $partnerId: String!
+            $period: AnalyticsQueryPeriodEnum!
+          ) {
+            partner(id: $partnerId) {
+              name
+              analytics {
+                pageviews(period: $period) {
+                  totalCount
+                  percentageChanged
+                  artworkViews
+                  galleryViews
+                  showViews
+                  uniqueVisitors
+                }
+                sales(period: $period) {
+                  orderCount
+                  orderResponseTime
+                  totalCents
+                  total
+                }
+                inquiry(period: $period) {
+                  inquiryCount
+                  inquiryResponseTime
+                }
+                audience(period: $period) {
+                  uniqueVisitors
+                  commercialVisitors
+                }
+                artworkPublished(period: $period) {
+                  totalCount
+                  percentageChanged
+                }
+                rankedStats(objectType: ARTWORK, period: $period, first: 10) {
+                  edges {
+                    node {
+                      value
+                      entity {
+                        __typename
+                        ... on Artwork {
+                          id
+                          slug
+                          title
+                          artist {
+                            name
                           }
                         }
                       }
@@ -85,9 +80,10 @@ export const completeAnalyticsTool = (relayEnvironment: Environment) => {
                 }
               }
             }
-          `,
-          { partnerId, period }
-        ).toPromise()
+          }
+        `
+
+        const data = await executeQuery<any>(query, { partnerId, period })
 
         return {
           content: [

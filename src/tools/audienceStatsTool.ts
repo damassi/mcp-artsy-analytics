@@ -1,7 +1,5 @@
 import * as z from "zod"
-import { graphql, fetchQuery } from "relay-runtime"
-import type { Environment } from "relay-runtime"
-import type { audienceStatsToolQuery } from "z__generated__/audienceStatsToolQuery.graphql.js"
+import { executeQuery } from "../utils/graphql"
 
 export interface AudienceStatsArgs {
   partnerId: string
@@ -9,7 +7,7 @@ export interface AudienceStatsArgs {
   includeGroupedStats?: boolean
 }
 
-export const audienceStatsTool = (relayEnvironment: Environment) => {
+export const audienceStatsTool = () => {
   return {
     name: "get_partner_audience_stats",
     description:
@@ -35,71 +33,68 @@ export const audienceStatsTool = (relayEnvironment: Environment) => {
       includeGroupedStats = true,
     }: AudienceStatsArgs) => {
       try {
-        const data = await fetchQuery<audienceStatsToolQuery>(
-          relayEnvironment,
-          graphql`
-            query audienceStatsToolQuery(
-              $partnerId: String!
-              $period: AnalyticsQueryPeriodEnum!
-              $includeGroupedStats: Boolean!
-            ) {
-              partner(id: $partnerId) {
-                name
-                analytics {
-                  audience(period: $period) {
-                    uniqueVisitors
-                    commercialVisitors
-                  }
-                  topCountries: groupedStats(
-                    metric: VISITOR_BY_LOCATION
-                    period: $period
-                    objectType: COUNTRY
-                    first: 10
-                  ) @include(if: $includeGroupedStats) {
-                    edges {
-                      node {
-                        groupedEntity {
-                          ... on AnalyticsVisitorsByCountry {
-                            name
-                            value
-                            percent
-                          }
+        const query = `
+          query audienceStatsToolQuery(
+            $partnerId: String!
+            $period: AnalyticsQueryPeriodEnum!
+            $includeGroupedStats: Boolean!
+          ) {
+            partner(id: $partnerId) {
+              name
+              analytics {
+                audience(period: $period) {
+                  uniqueVisitors
+                  commercialVisitors
+                }
+                topCountries: groupedStats(
+                  metric: VISITOR_BY_LOCATION
+                  period: $period
+                  objectType: COUNTRY
+                  first: 10
+                ) @include(if: $includeGroupedStats) {
+                  edges {
+                    node {
+                      groupedEntity {
+                        ... on AnalyticsVisitorsByCountry {
+                          name
+                          value
+                          percent
                         }
                       }
                     }
                   }
-                  topDevices: groupedStats(
-                    metric: VISITOR_BY_DEVICE
-                    period: $period
-                    objectType: DEVICE
-                    first: 10
-                  ) @include(if: $includeGroupedStats) {
-                    edges {
-                      node {
-                        groupedEntity {
-                          ... on AnalyticsVisitorsByDevice {
-                            name
-                            value
-                            percent
-                          }
+                }
+                topDevices: groupedStats(
+                  metric: VISITOR_BY_DEVICE
+                  period: $period
+                  objectType: DEVICE
+                  first: 10
+                ) @include(if: $includeGroupedStats) {
+                  edges {
+                    node {
+                      groupedEntity {
+                        ... on AnalyticsVisitorsByDevice {
+                          name
+                          value
+                          percent
                         }
                       }
                     }
                   }
-                  topReferrals: groupedStats(
-                    metric: VISITOR_BY_REFERRAL
-                    period: $period
-                    objectType: REFERRAL
-                    first: 10
-                  ) @include(if: $includeGroupedStats) {
-                    edges {
-                      node {
-                        groupedEntity {
-                          ... on AnalyticsVisitorsByReferral {
-                            name
-                            value
-                            percent
-                          }
+                }
+                topReferrals: groupedStats(
+                  metric: VISITOR_BY_REFERRAL
+                  period: $period
+                  objectType: REFERRAL
+                  first: 10
+                ) @include(if: $includeGroupedStats) {
+                  edges {
+                    node {
+                      groupedEntity {
+                        ... on AnalyticsVisitorsByReferral {
+                          name
+                          value
+                          percent
                         }
                       }
                     }
@@ -107,9 +102,19 @@ export const audienceStatsTool = (relayEnvironment: Environment) => {
                 }
               }
             }
-          `,
-          { partnerId, period, includeGroupedStats }
-        ).toPromise()
+          }
+        `
+
+        const data = await executeQuery<{
+          partner?: {
+            name?: string
+            analytics?: unknown
+          }
+        }>(query, {
+          partnerId,
+          period,
+          includeGroupedStats,
+        })
 
         return {
           content: [
