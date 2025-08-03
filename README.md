@@ -88,6 +88,9 @@ When developing, can run
 
 ```bash
 bun dev
+
+# Generate GraphQL types from schema
+bun gql
 ```
 
 Then launch the `modelcontextprotocol` [inspector](https://modelcontextprotocol.io/legacy/tools/inspector):
