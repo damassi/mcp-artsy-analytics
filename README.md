@@ -59,9 +59,10 @@ code ~/Library/Application Support/Claude/claude_desktop_config.json
 {
   "mcpServers": {
     "artsy-analytics": {
-      "command": "bun",
-      "args": ["/path/to/mcp/mcp-server.ts"],
+      "command": "/Users/<user-name>/.bun/bin/bun",
+      "args": ["/path/to/mcp/src/mcp-server.ts"],
       "env": {
+        "CLAUDE_DESKTOP": "true",
         "METAPHYSICS_ENDPOINT": "your_endpoint",
         "USER_ID": "your_user_id",
         "X_ACCESS_TOKEN": "your_token"

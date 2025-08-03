@@ -15,6 +15,7 @@ import { inquiryTimeSeriesTool } from "./tools/inquiryTimeSeriesTool"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import chalk from "chalk"
+import { log, error as logError } from "utils/logger"
 
 const server = new McpServer({
   name: "artsy-analytics-server",
@@ -51,7 +52,7 @@ tools.forEach((tool) => {
         const result = await tool.handler(args)
         return result as any
       } catch (error) {
-        console.log(`Tool error: ${tool.name}`, {
+        logError(`Tool error: ${tool.name}`, {
           error: error instanceof Error ? error.message : error,
         })
         throw error
@@ -67,7 +68,7 @@ async function startServer() {
   try {
     await server.connect(transport)
 
-    console.log(`
+    log(`
 ${chalk.magenta("[artsy-analytics-mcp]")} ${chalk.bold("MCP server running.")}
 
 ${chalk.cyan("Available Tools:")} ${chalk.yellow(tools.length)} analytics tools loaded
@@ -78,9 +79,10 @@ Add this to your claude_desktop_config.json:
 ${chalk.gray(`{
   "mcpServers": {
     "artsy-analytics": {
-      "command": "bun",
+      "command": "/Users/<user-name>/.bun/bin/bun",
       "args": ["${process.cwd()}/src/mcp-server.ts"],
       "env": {
+        "CLAUDE_DESKTOP": "true",
         "METAPHYSICS_ENDPOINT": "your_endpoint",
         "USER_ID": "your_user_id",
         "X_ACCESS_TOKEN": "your_token"
@@ -95,7 +97,7 @@ ${chalk.bold("Config file location:")}
 ${chalk.bold("Try asking Claude:")} ${chalk.italic('"Show visitor demographics for gagosian"')}
 `)
   } catch (error) {
-    console.error(
+    logError(
       "[analytics-mcp: ERROR] Error starting Artsy Analytics MCP Server:",
       error
     )
