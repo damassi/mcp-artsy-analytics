@@ -1,6 +1,6 @@
 # Artsy Analytics MCP Server POC
 
-Model Context Protocol server providing Artsy partner analytics tools for Claude Desktop.
+Model Context Protocol server providing Artsy partner analytics tools for Claude Desktop. Built with [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk).
 
 ## Available Tools
 

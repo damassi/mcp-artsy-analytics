@@ -61,7 +61,6 @@ tools.forEach((tool) => {
   )
 })
 
-// Start receiving messages on stdin and sending messages on stdout
 async function startServer() {
   const transport = new StdioServerTransport()
 
